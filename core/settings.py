@@ -31,8 +31,8 @@ DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 't')
 
 ALLOWED_HOSTS = ['*']
 
-# Security Configuration for Railway
-CSRF_TRUSTED_ORIGINS = ['https://*.up.railway.app']
+# Security Configuration for Render
+CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com']
 
 
 # Application definition
