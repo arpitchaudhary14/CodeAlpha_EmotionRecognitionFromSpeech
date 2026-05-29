@@ -1,0 +1,120 @@
+{% extends 'emotion_app/base.html' %}
+{% load static %}
+
+{% block title %}Model Dashboard - ResoNate{% endblock %}
+
+{% block content %}
+<div class="glass-card">
+    <div class="controls">
+        <button id="recordBtn" class="btn btn-primary">
+            <span class="icon">🎤</span> Start Recording
+        </button>
+        <div class="divider">
+            <span>OR</span>
+        </div>
+        <label for="audioUpload" class="btn btn-secondary">
+            <span class="icon">📁</span> Upload Audio
+        </label>
+        <input type="file" id="audioUpload" accept="audio/*" hidden>
+    </div>
+    
+    <div class="audio-visualizer" id="visualizer">
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+    </div>
+    
+    <div class="status-message" id="statusMessage">
+        Ready to analyze speech...
+    </div>
+    
+    <div class="result-container" id="resultContainer">
+        <div class="ai-analysis-card glass-panel premium-analysis">
+            <div class="emotion-header">
+                <div class="emotion-icon-container" id="emotionIcon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
+                </div>
+                <h2 class="emotion-display animated-title" id="emotionDisplay">
+                    <!-- Emotion will be injected here -->
+                </h2>
+            </div>
+            
+            <div class="confidence-section">
+                <div class="circular-meter">
+                    <svg viewBox="0 0 100 100">
+                        <circle class="meter-bg" cx="50" cy="50" r="40"></circle>
+                        <circle class="meter-progress" id="circularProgress" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="251.2"></circle>
+                    </svg>
+                    <div class="meter-text">
+                        <span id="confidenceTextVal">0</span>%
+                    </div>
+                </div>
+                <p class="confidence-label">AI Confidence Level</p>
+                <div class="confidence-bar" style="display:none;">
+                    <div class="confidence-fill" id="confidenceFill"></div>
+                    <p class="confidence-text" id="confidenceText">0%</p>
+                </div>
+            </div>
+            
+            <div class="analysis-details">
+                <p id="emotionReaction">ResoNate has analyzed the unique acoustic patterns in your voice to determine the primary emotional state.</p>
+            </div>
+            
+            <div id="confidenceWarning" class="confidence-warning" style="display: none; padding: 1rem; border-radius: 8px; margin-top: 1rem; font-weight: 500;">
+                <!-- Warning text injected here -->
+            </div>
+        </div>
+        
+        <div class="probability-breakdown glass-panel" id="probabilityBreakdown" style="display: none; margin-top: 1.5rem; padding: 1.5rem; border-radius: 12px;">
+            <h3>Probability Breakdown</h3>
+            <p style="font-size: 0.9rem; color: #a1a1aa; margin-bottom: 1rem;">Complete softmax distribution across all emotion classes.</p>
+            
+            <div class="prob-item">
+                <div class="prob-label">
+                    <span>Happy</span>
+                    <span id="prob-val-happy">0%</span>
+                </div>
+                <div class="prob-bar-bg" style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                    <div id="prob-bar-happy" style="width: 0%; height: 100%; background: var(--success-color); transition: width 1s ease;"></div>
+                </div>
+            </div>
+            
+            <div class="prob-item" style="margin-top: 0.75rem;">
+                <div class="prob-label">
+                    <span>Sad</span>
+                    <span id="prob-val-sad">0%</span>
+                </div>
+                <div class="prob-bar-bg" style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                    <div id="prob-bar-sad" style="width: 0%; height: 100%; background: var(--secondary-color); transition: width 1s ease;"></div>
+                </div>
+            </div>
+            
+            <div class="prob-item" style="margin-top: 0.75rem;">
+                <div class="prob-label">
+                    <span>Angry</span>
+                    <span id="prob-val-angry">0%</span>
+                </div>
+                <div class="prob-bar-bg" style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                    <div id="prob-bar-angry" style="width: 0%; height: 100%; background: var(--warning-color); transition: width 1s ease;"></div>
+                </div>
+            </div>
+            
+            <div class="prob-item" style="margin-top: 0.75rem;">
+                <div class="prob-label">
+                    <span>Neutral</span>
+                    <span id="prob-val-neutral">0%</span>
+                </div>
+                <div class="prob-bar-bg" style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                    <div id="prob-bar-neutral" style="width: 0%; height: 100%; background: #94a3b8; transition: width 1s ease;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'emotion_app/script.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends 'emotion_app/base.html' %}
+
+{% block title %}Search Results | ResoNate{% endblock %}
+
+{% block content %}
+<div class="history-container">
+    <div class="page-header">
+        <h1>Search Results</h1>
+        <p>Results for "<strong>{{ query }}</strong>"</p>
+    </div>
+
+    <div class="glass-panel" style="padding: 2rem;">
+        {% if not query %}
+            <p>Please enter a search query.</p>
+        {% elif results %}
+            <div class="search-results-list" style="display: flex; flex-direction: column; gap: 1rem;">
+                {% for result in results %}
+                <a href="{{ result.url }}" class="search-result-item" style="text-decoration: none; background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(255,255,255,0.05)'; this.style.borderColor='var(--accent-1)'" onmouseout="this.style.background='rgba(0,0,0,0.2)'; this.style.borderColor='var(--glass-border)'">
+                    <div>
+                        <h3 style="color: var(--text-main); margin-bottom: 0.5rem; font-size: 1.1rem;">{{ result.title }}</h3>
+                        <span style="font-size: 0.8rem; color: var(--accent-1); background: rgba(59, 130, 246, 0.1); padding: 0.2rem 0.6rem; border-radius: 12px; font-weight: 600;">{{ result.type }}</span>
+                    </div>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <h3>No Results Found</h3>
+                <p>We couldn't find any matches for "{{ query }}".</p>
+                <a href="{% url 'landing' %}" class="btn primary-btn mt-4">Go Back</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

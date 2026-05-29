@@ -1,0 +1,126 @@
+{% extends 'emotion_app/base.html' %}
+
+{% block title %}User Profile | ResoNate{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-header">
+        <h1>Your Profile</h1>
+        <p>Manage your account settings and preferences.</p>
+    </div>
+
+    <div class="profile-grid">
+        <div class="profile-card glass-panel">
+            <div class="profile-avatar-container">
+                <div class="profile-avatar">
+                    {% if user.userprofile.profile_pic %}
+                        <img src="{{ user.userprofile.profile_pic.url }}" alt="Profile Picture">
+                    {% else %}
+                        <div class="avatar-placeholder">{{ user.username|make_list|first|upper }}</div>
+                    {% endif %}
+                </div>
+                <form action="{% url 'profile' %}" method="POST" enctype="multipart/form-data" class="upload-pic-form" id="picUploadForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="upload_pic">
+                    <label for="profile_pic" class="upload-pic-label" title="Upload new picture">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    </label>
+                    <input type="file" id="profile_pic" name="profile_pic" accept="image/*" hidden onchange="document.getElementById('picUploadForm').submit();">
+                </form>
+            </div>
+            <div class="profile-info">
+                <h2>{{ user.username }}</h2>
+                {% if user.email %}
+                    <p class="email">{{ user.email }}</p>
+                {% else %}
+                    <form action="{% url 'profile' %}" method="POST" class="inline-form" style="display: flex; gap: 0.5rem; align-items: center; justify-content: center; margin: 0.5rem 0;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_email">
+                        <input type="email" name="new_email" class="form-control" placeholder="Add your email" required style="padding: 0.4rem 0.8rem; font-size: 0.9rem; max-width: 180px;">
+                        <button type="submit" class="btn primary-btn" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">Save</button>
+                    </form>
+                {% endif %}
+                <p class="join-date">Member since: {{ user.date_joined|date:"M d, Y" }}</p>
+            </div>
+            
+            <div class="profile-actions">
+                {% if not user.userprofile.email_verified %}
+                    {% if user.email %}
+                    <form action="{% url 'verify_email' %}" method="POST" class="inline-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="send_otp">
+                        <button type="submit" class="btn warning-btn">Verify Email</button>
+                    </form>
+                    {% else %}
+                    <span class="badge warning-badge">Please add an email to verify</span>
+                    {% endif %}
+                {% else %}
+                <span class="badge success-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Email Verified</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="settings-card glass-panel">
+            <h2>Security Settings</h2>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h3>Two-Factor Authentication (2FA)</h3>
+                    <p>Add an extra layer of security to your account.</p>
+                </div>
+                <form action="{% url 'profile' %}" method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="toggle_2fa">
+                    <label class="switch">
+                        <input type="checkbox" onChange="this.form.submit()" {% if user.userprofile.two_factor_enabled %}checked{% endif %}>
+                        <span class="slider round"></span>
+                    </label>
+                </form>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h3>Password Management</h3>
+                    <p>Update your password regularly to keep your account secure.</p>
+                </div>
+                <a href="{% url 'password_reset' %}" class="btn outline-btn">Change Password</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Danger Zone moved outside of grid to stretch full width -->
+    <div class="settings-card glass-panel mt-4" style="border-color: rgba(239, 68, 68, 0.3);">
+        <h2 style="color: #ef4444;">Danger Zone</h2>
+        
+        <div class="setting-item" style="flex-direction: row; justify-content: space-between; align-items: center;">
+            <div class="setting-info">
+                <h3>Delete Account</h3>
+                <p>Once you delete your account, there is no going back. Please be certain.</p>
+            </div>
+            
+            <button class="btn btn-secondary" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3);" onclick="document.getElementById('deleteAccModal').style.display='flex'">Delete your account</button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Account Modal -->
+<div class="cookie-modal-overlay" id="deleteAccModal" style="display: none;">
+    <div class="cookie-modal glass-card" style="border-color: rgba(239, 68, 68, 0.3);">
+        <h3 style="color: #ef4444;">Are you absolutely sure?</h3>
+        <p class="text-muted mb-4">This action cannot be undone. This will permanently delete the <strong>{{ user.username }}</strong> account and remove all your data and prediction history.</p>
+        
+        <form method="post" action="{% url 'delete_account' %}">
+            {% csrf_token %}
+            <div class="form-group floating-label">
+                <input type="text" id="username_confirm" name="username_confirm" required class="form-control" placeholder=" ">
+                <label for="username_confirm">Please type <strong>{{ user.username }}</strong> to confirm</label>
+            </div>
+            
+            <div class="cookie-modal-actions mt-4" style="display: flex; gap: 1rem;">
+                <button type="button" class="btn btn-secondary w-100" onclick="document.getElementById('deleteAccModal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn w-100" style="background: #ef4444; color: white;">I understand, delete my account</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends 'emotion_app/base.html' %}
+
+{% block title %}Privacy Policy - ResoNate{% endblock %}
+
+{% block content %}
+<div class="glass-card" style="max-width: 800px; margin: 0 auto; text-align: left;">
+    <h2 style="margin-bottom: 1.5rem; font-size: 2rem;">Privacy Policy</h2>
+    
+    <div style="color: var(--text-muted); line-height: 1.6;">
+        <p style="margin-bottom: 1rem;"><strong>Effective Date:</strong> May 2026</p>
+        
+        <h3 style="color: var(--text-main); margin: 1.5rem 0 0.5rem;">1. Data Collection</h3>
+        <p style="margin-bottom: 1rem;">
+            When you use ResoNate, we process audio data either uploaded directly by you or recorded via your browser's microphone. This audio data is used exclusively to extract MFCC features for deep learning classification.
+        </p>
+
+        <h3 style="color: var(--text-main); margin: 1.5rem 0 0.5rem;">2. Data Storage</h3>
+        <p style="margin-bottom: 1rem;">
+            We value your privacy. Audio files processed by our Speech Emotion Recognition pipeline are strictly temporary. They are securely deleted from our servers immediately after the ML inference is complete. We do not store your voice data.
+        </p>
+
+        <h3 style="color: var(--text-main); margin: 1.5rem 0 0.5rem;">3. Account Information</h3>
+        <p style="margin-bottom: 1rem;">
+            When you register for an account, we store your username and securely hashed password. We do not share your account information with third parties.
+        </p>
+    </div>
+</div>
+{% endblock %}

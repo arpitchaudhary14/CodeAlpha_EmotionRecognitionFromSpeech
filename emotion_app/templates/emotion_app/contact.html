@@ -1,0 +1,50 @@
+{% extends 'emotion_app/base.html' %}
+
+{% block title %}Contact Us - ResoNate{% endblock %}
+
+{% block content %}
+<div class="contact-container" style="width: 100%; max-width: 1000px; margin: 0 auto;">
+    <div class="contact-hero text-center mb-5">
+        <h1 class="gradient-text">Get in Touch</h1>
+        <p class="subtitle">Have questions about our Speech Emotion ML API? We're here to help.</p>
+    </div>
+    
+    <div class="contact-grid">
+        <div class="contact-info glass-panel">
+            <h2>Contact Information</h2>
+            <p>Fill out the form and our team will get back to you within 24 hours.</p>
+            
+            <div class="info-item mt-4">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                <span>+91 98765 43210</span>
+            </div>
+            <div class="info-item">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                <span>support@resonate.ai</span>
+            </div>
+            <div class="info-item">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                <span>Bangalore, India</span>
+            </div>
+        </div>
+        
+        <div class="contact-form-container glass-panel">
+            <form action="#" method="POST" class="premium-form" onsubmit="event.preventDefault(); this.innerHTML='<div class=\'success-message\'><svg width=\'48\' height=\'48\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'var(--success-color)\' stroke-width=\'2\'><path d=\'M22 11.08V12a10 10 0 1 1-5.93-9.14\'></path><polyline points=\'22 4 12 14.01 9 11.01\'></polyline></svg><h3>Message Sent Successfully!</h3><p>We will get back to you shortly.</p></div>';">
+                <div class="form-group floating-label">
+                    <input type="text" id="name" name="name" required class="form-control" placeholder=" ">
+                    <label for="name">Your Name</label>
+                </div>
+                <div class="form-group floating-label">
+                    <input type="email" id="email" name="email" required class="form-control" placeholder=" ">
+                    <label for="email">Email Address</label>
+                </div>
+                <div class="form-group floating-label">
+                    <textarea id="message" name="message" rows="5" required class="form-control" placeholder=" "></textarea>
+                    <label for="message">Message</label>
+                </div>
+                <button type="submit" class="btn primary-btn pulse-btn w-100">Send Message</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

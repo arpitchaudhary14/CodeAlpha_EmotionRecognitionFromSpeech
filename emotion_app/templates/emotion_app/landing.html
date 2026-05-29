@@ -1,0 +1,146 @@
+{% extends 'emotion_app/base.html' %}
+
+{% block title %}ResoNate - AI Speech Emotion Recognition{% endblock %}
+
+{% block content %}
+<div class="landing-hero">
+    <!-- Global Search Bar -->
+    <div class="global-search-container glass-card">
+        <form action="{% url 'search' %}" method="GET" class="search-form">
+            <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" name="q" placeholder="Search predictions, account settings, or pages..." class="search-input" required>
+            <button type="submit" class="search-btn">Search</button>
+        </form>
+    </div>
+
+    <div class="hero-content glass-card landing-card">
+        <h1>Decode Emotions with <span class="gradient-text">Voice</span></h1>
+        <p class="hero-subtitle">
+            Instantly detect Neutral, Happy, Sad, and Angry emotional states directly from speech audio patterns with our highly accurate AI system.
+        </p>
+        <div class="hero-actions">
+            {% if user.is_authenticated %}
+                <a href="{% url 'model' %}" class="btn btn-primary">Open Speech Analyzer</a>
+            {% else %}
+                <a href="{% url 'register' %}" class="btn btn-primary">Get Started for Free</a>
+                <a href="{% url 'login' %}" class="btn btn-secondary">Login to Analyzer</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="features-grid">
+        <div class="feature-card glass-card">
+            <span class="feature-icon">⚡</span>
+            <h3>Real-time Processing</h3>
+            <p>Upload .wav files or use the live browser microphone to get instant ML inference results.</p>
+        </div>
+        <div class="feature-card glass-card">
+            <span class="feature-icon">✨</span>
+            <h3>Highly Accurate</h3>
+            <p>Our advanced AI system is constantly learning to provide the most precise emotional analysis possible.</p>
+        </div>
+        <div class="feature-card glass-card">
+            <span class="feature-icon">🔒</span>
+            <h3>Secure Dashboard</h3>
+            <p>Your audio and data are processed instantly and deleted securely to protect your privacy.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Cookie Settings Banner -->
+<div class="cookie-banner glass-panel" id="cookieBanner" style="display: none;">
+    <div class="cookie-content">
+        <h3>Cookie Preferences</h3>
+        <p>We use cookies to enhance your experience. By continuing to visit this site you agree to our use of cookies.</p>
+    </div>
+    <div class="cookie-actions">
+        <button class="btn btn-secondary" onclick="openCookieModal()">Set Preferences</button>
+        <button class="btn btn-secondary" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3);" onclick="rejectAllCookies()">Reject All</button>
+        <button class="btn btn-primary" onclick="acceptAllCookies()">Accept All</button>
+    </div>
+</div>
+
+<!-- Cookie Preferences Modal -->
+<div class="cookie-modal-overlay" id="cookieModal" style="display: none;">
+    <div class="cookie-modal glass-card">
+        <h3>Cookie Preferences</h3>
+        <p class="text-muted mb-4">Manage how we use cookies on your device.</p>
+        <div class="cookie-options">
+            <div class="cookie-option">
+                <div class="cookie-option-header">
+                    <h4>Strictly Necessary</h4>
+                    <label class="switch">
+                        <input type="checkbox" checked disabled>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <p>Required for the website to function properly. Cannot be disabled.</p>
+            </div>
+            <div class="cookie-option">
+                <div class="cookie-option-header">
+                    <h4>Analytics</h4>
+                    <label class="switch">
+                        <input type="checkbox" id="cookieAnalytics" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <p>Helps us understand how visitors interact with the website.</p>
+            </div>
+            <div class="cookie-option">
+                <div class="cookie-option-header">
+                    <h4>Personalization</h4>
+                    <label class="switch">
+                        <input type="checkbox" id="cookiePersonalization">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <p>Used to deliver personalized content and recommendations.</p>
+            </div>
+        </div>
+        <div class="cookie-modal-actions mt-4">
+            <button class="btn btn-primary w-100" onclick="saveCookiePreferences()">Save Preferences</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function hideCookieBanner() {
+        document.getElementById('cookieBanner').style.display = 'none';
+        localStorage.setItem('cookieChoice', 'saved');
+    }
+    
+    function acceptAllCookies() {
+        localStorage.setItem('cookieAnalytics', 'true');
+        localStorage.setItem('cookiePersonalization', 'true');
+        hideCookieBanner();
+    }
+    
+    function rejectAllCookies() {
+        localStorage.setItem('cookieAnalytics', 'false');
+        localStorage.setItem('cookiePersonalization', 'false');
+        hideCookieBanner();
+    }
+    
+    function openCookieModal() {
+        document.getElementById('cookieModal').style.display = 'flex';
+    }
+    
+    function saveCookiePreferences() {
+        const analytics = document.getElementById('cookieAnalytics').checked;
+        const personalization = document.getElementById('cookiePersonalization').checked;
+        localStorage.setItem('cookieAnalytics', analytics);
+        localStorage.setItem('cookiePersonalization', personalization);
+        document.getElementById('cookieModal').style.display = 'none';
+        hideCookieBanner();
+    }
+    
+    window.onload = function() {
+        if (!localStorage.getItem('cookieChoice')) {
+            document.getElementById('cookieBanner').style.display = 'flex';
+        }
+    }
+</script>
+{% endblock %}

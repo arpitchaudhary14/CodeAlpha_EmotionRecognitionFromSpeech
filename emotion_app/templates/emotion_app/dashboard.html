@@ -1,0 +1,60 @@
+{% extends 'emotion_app/base.html' %}
+
+{% block title %}Dashboard | ResoNate{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1>Welcome back, {{ user.username }}</h1>
+        <p>Here is an overview of your recent speech analyses.</p>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card glass-panel">
+            <div class="stat-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            </div>
+            <div class="stat-details">
+                <h3>Total Analyses</h3>
+                <p class="stat-value">{{ total_analyses }}</p>
+            </div>
+        </div>
+
+        <div class="stat-card glass-panel" style="cursor: pointer;" onclick="window.location.href='{% url 'insights' %}'">
+            <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: var(--success-color);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            </div>
+            <div class="stat-details">
+                <h3>AI Insights</h3>
+                <p class="stat-value" style="font-size: 1rem; color: var(--success-color);">View Analytics &rarr;</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-main">
+        <div class="recent-analyses glass-panel">
+            <h2>Recent Analyses</h2>
+            {% if recent_analyses %}
+            <ul class="analysis-list">
+                {% for analysis in recent_analyses %}
+                <li class="analysis-item">
+                    <span class="analysis-emotion emotion-{{ analysis.emotion|lower }}">{{ analysis.emotion|title }}</span>
+                    <span class="analysis-confidence">{{ analysis.confidence }}% Confidence</span>
+                    <span class="analysis-date">{{ analysis.created_at|date:"M d, Y H:i" }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            <a href="{% url 'history' %}" class="view-all-link">View All History</a>
+            {% else %}
+            <p>You haven't analyzed any speech yet.</p>
+            {% endif %}
+        </div>
+
+        <div class="quick-action glass-panel">
+            <h2>Quick Actions</h2>
+            <p>Ready to analyze new audio?</p>
+            <a href="{% url 'model' %}" class="simple-link mt-4" style="display: inline-block;">Go to Speech Analyzer</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

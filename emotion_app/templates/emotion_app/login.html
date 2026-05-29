@@ -1,0 +1,39 @@
+{% extends 'emotion_app/base.html' %}
+
+{% block title %}Login - ResoNate{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="glass-card auth-card">
+        <h2>Welcome Back</h2>
+        <p class="auth-subtitle">Login to access the ResoNate ML Dashboard.</p>
+        
+        {% if timeout_msg %}
+        <div class="error-msg" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 1rem; border-radius: 8px; color: #fca5a5; margin-bottom: 1.5rem; text-align: center;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom: 0.5rem;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            <br>
+            Your session expired due to inactivity. Please log in again.
+        </div>
+        {% endif %}
+        
+        <form method="post" class="auth-form">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <div class="form-error">{{ field.errors|striptags }}</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            <div class="auth-extra">
+                <a href="{% url 'password_reset' %}" class="forgot-password-link">Forgot Password?</a>
+            </div>
+            <button type="submit" class="btn btn-primary auth-btn">Login</button>
+        </form>
+        
+        <p class="auth-redirect">Don't have an account? <a href="{% url 'register' %}">Sign up here</a></p>
+    </div>
+</div>
+{% endblock %}

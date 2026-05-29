@@ -1,0 +1,127 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ResoNate{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{% static 'emotion_app/logo_v2.png' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'emotion_app/style.css' %}">
+</head>
+
+<body>
+    <div class="background-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="{% url 'landing' %}" class="nav-brand">
+                <img src="{% static 'emotion_app/logo_v2.png' %}" alt="ResoNate Logo" class="nav-logo">
+                ResoNate
+            </a>
+            <div class="nav-links">
+                <a href="{% url 'landing' %}" class="nav-link">Home</a>
+                {% if user.is_authenticated %}
+                <a href="{% url 'dashboard' %}" class="nav-link">Dashboard</a>
+                <a href="{% url 'model' %}" class="nav-link">Speech Analyzer</a>
+                <a href="{% url 'insights' %}" class="nav-link" style="color: var(--success-color);">AI Insights</a>
+                <a href="{% url 'history' %}" class="nav-link">History</a>
+                <a href="{% url 'contact' %}" class="nav-link">Contact Us</a>
+                <div class="nav-user">
+                    <a href="{% url 'profile' %}" class="nav-link">{{ user.username }}</a>
+                    <a href="{% url 'logout' %}" class="nav-link logout-btn">Logout</a>
+                </div>
+                {% else %}
+                <a href="{% url 'model' %}" class="nav-link">Speech Analyzer</a>
+                <a href="{% url 'contact' %}" class="nav-link">Contact Us</a>
+                <a href="{% url 'login' %}" class="nav-link login-btn">Login</a>
+                <a href="{% url 'register' %}" class="nav-link register-btn">Sign Up</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="page-content">
+        {% block content %}
+        {% endblock content %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-brand">
+                <a href="{% url 'landing' %}" class="nav-brand" style="margin-bottom: 1rem;">
+                    <img src="{% static 'emotion_app/logo_v2.png' %}" alt="ResoNate Logo" class="nav-logo"
+                        style="height: 32px;">
+                    ResoNate
+                </a>
+                <p>
+                    Advanced Speech Emotion Recognition API for enterprise and developers. Analyze emotions with high
+                    accuracy.
+                </p>
+            </div>
+            <div class="footer-links">
+                <div class="link-column">
+                    <h4>Platform</h4>
+                    <a href="{% url 'model' %}">Speech Analyzer</a>
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'dashboard' %}">Dashboard</a>
+                    <a href="{% url 'insights' %}">AI Insights</a>
+                    <a href="{% url 'history' %}">Prediction History</a>
+                    <a href="{% url 'profile' %}">Account Settings</a>
+                    {% else %}
+                    <a href="{% url 'login' %}">Login</a>
+                    <a href="{% url 'register' %}">Sign Up</a>
+                    {% endif %}
+                </div>
+                <div class="link-column">
+                    <h4>Company</h4>
+                    <a href="{% url 'contact' %}">Contact Us</a>
+                    <a href="{% url 'privacy' %}">Privacy Policy</a>
+                    <a href="{% url 'terms' %}">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 ResoNate AI. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Any extra JS blocks from child templates -->
+    {% block scripts %}
+    {% endblock %}
+
+    {% if user.is_authenticated %}
+    <script>
+        // 15-Minute AFK (Away From Keyboard) Tracker
+        let afkTime = 0;
+        const AFK_LIMIT = 900; // 900 seconds = 15 minutes
+
+        // Increment timer every second
+        const afkInterval = setInterval(() => {
+            afkTime++;
+            if (afkTime >= AFK_LIMIT) {
+                clearInterval(afkInterval);
+                window.location.href = "{% url 'logout' %}?timeout=true";
+            }
+        }, 1000);
+
+        // Reset timer on user activity
+        const resetAfkTimer = () => { afkTime = 0; };
+
+        // Track activity events
+        ['mousemove', 'mousedown', 'keypress', 'touchmove', 'scroll'].forEach(evt => {
+            window.addEventListener(evt, resetAfkTimer, true);
+        });
+    </script>
+    {% endif %}
+</body>
+
+</html>
