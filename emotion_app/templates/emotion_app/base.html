@@ -8,7 +8,7 @@
     <title>{% block title %}ResoNate{% endblock %}</title>
     <link rel="icon" type="image/png" href="{% static 'emotion_app/logo_v2.png' %}">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'emotion_app/style.css' %}">
+    <link rel="stylesheet" href="{% static 'emotion_app/style.css' %}?v=3">
 </head>
 
 <body>
@@ -25,6 +25,11 @@
                 <img src="{% static 'emotion_app/logo_v2.png' %}" alt="ResoNate Logo" class="nav-logo">
                 ResoNate
             </a>
+            <div class="menu-toggle" id="mobile-menu">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
             <div class="nav-links">
                 <a href="{% url 'landing' %}" class="nav-link">Home</a>
                 {% if user.is_authenticated %}
@@ -97,6 +102,38 @@
     <!-- Any extra JS blocks from child templates -->
     {% block scripts %}
     {% endblock %}
+
+    <script>
+        // --- Mobile Menu Toggle ---
+        (function() {
+            const initMenu = () => {
+                const mobileMenu = document.getElementById('mobile-menu');
+                const navLinks = document.querySelector('.nav-links');
+
+                if (mobileMenu && navLinks) {
+                    mobileMenu.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        mobileMenu.classList.toggle('active');
+                        navLinks.classList.toggle('active');
+                    });
+                    
+                    // Close menu when a link is clicked
+                    navLinks.querySelectorAll('a').forEach(link => {
+                        link.addEventListener('click', () => {
+                            mobileMenu.classList.remove('active');
+                            navLinks.classList.remove('active');
+                        });
+                    });
+                }
+            };
+            
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initMenu);
+            } else {
+                initMenu();
+            }
+        })();
+    </script>
 
     {% if user.is_authenticated %}
     <script>
