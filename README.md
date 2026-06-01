@@ -49,3 +49,5 @@ python manage.py runserver
 The repository contains `best_model.pth` (~500KB) tracked directly in Git to ensure the repository remains fully self-contained for deployment on platforms like Railway or Heroku without requiring a secondary S3 model downloading pipeline.
 ## License
 &copy; 2026 ResoNate AI. All rights reserved.
+For Live Demo Visit Here:
+https://resonate-ai-vva8.onrender.com/
