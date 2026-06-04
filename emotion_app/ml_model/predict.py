@@ -1,4 +1,5 @@
 import os
+import gc
 import torch
 import torch.nn.functional as F
 
@@ -15,6 +16,40 @@ REVERSE_EMOTION_MAP = {
     3: 'Neutral'
 }
 
+# --- GLOBAL MODEL CACHING ---
+# To prevent Out-Of-Memory (OOM) errors on Render, we load the model into memory exactly once 
+# per worker process, rather than reloading it on every single request.
+_GLOBAL_MODEL = None
+_GLOBAL_DEVICE = None
+
+def get_model(model_path='best_model.pth'):
+    """
+    Returns the loaded PyTorch model and device.
+    Initializes the model only on the first call (Singleton pattern).
+    """
+    global _GLOBAL_MODEL, _GLOBAL_DEVICE
+    
+    if _GLOBAL_MODEL is None:
+        _GLOBAL_DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        abs_model_path = os.path.join(os.path.dirname(__file__), model_path)
+        
+        if not os.path.exists(abs_model_path):
+            raise FileNotFoundError(f"Model file not found at {abs_model_path}. Please train the model first.")
+            
+        # Initialize model architecture and move to device
+        model = EmotionCNN(num_classes=4).to(_GLOBAL_DEVICE)
+        
+        # Load weights
+        model.load_state_dict(torch.load(abs_model_path, map_location=_GLOBAL_DEVICE, weights_only=True))
+        
+        # Set to evaluation mode for deterministic predictions
+        model.eval()
+        
+        _GLOBAL_MODEL = model
+        
+    return _GLOBAL_MODEL, _GLOBAL_DEVICE
+
+
 def predict_emotion(file_path, model_path='best_model.pth', max_pad_len=400):
     """
     Predicts the emotion of a given audio file using the trained PyTorch model.
@@ -29,78 +64,58 @@ def predict_emotion(file_path, model_path='best_model.pth', max_pad_len=400):
               the 'confidence' score (float between 0 and 1), or an error 
               message if processing fails.
     """
-    
-    # 1. Resolve absolute model path
-    # We use os.path.dirname(__file__) to ensure it looks in the same directory as this script
-    abs_model_path = os.path.join(os.path.dirname(__file__), model_path)
-    
-    if not os.path.exists(abs_model_path):
+    try:
+        # 1. Get Global Model (Loads only once per process)
+        try:
+            model, device = get_model(model_path)
+        except Exception as e:
+            return {"error": str(e)}
+
+        # 2. Extract Features
+        # The feature extractor will pad/truncate to guarantee shape (40, max_pad_len)
+        features = extract_features(file_path, max_pad_len=max_pad_len)
+        
+        if features is None:
+            return {
+                "error": "Failed to extract features from the audio file."
+            }
+            
+        # 3. Prepare Tensor Dimensions
+        feature_tensor = torch.tensor(features, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
+        feature_tensor = feature_tensor.to(device)
+
+        # 4. Perform Inference
+        # torch.no_grad() disables gradient calculation, saving memory and speeding up prediction
+        with torch.no_grad():
+            outputs = model(feature_tensor)
+            probabilities = F.softmax(outputs, dim=1)
+            confidence, predicted_idx = torch.max(probabilities, 1)
+
+        # Extract the standard Python values from the PyTorch tensors using .item()
+        predicted_label = REVERSE_EMOTION_MAP.get(predicted_idx.item(), "Unknown")
+        confidence_score = confidence.item()
+
+        # Extract all probabilities and map them
+        probs_list = probabilities[0].tolist()
+        emotion_probs = {}
+        for idx, prob in enumerate(probs_list):
+            emotion_name = REVERSE_EMOTION_MAP.get(idx, "Unknown")
+            emotion_probs[emotion_name] = round(prob, 4)
+
+        # 5. Clean up local tensors to eagerly free memory before garbage collection
+        del feature_tensor
+        del outputs
+        del probabilities
+
+        # 6. Return Result
         return {
-            "error": f"Model file not found at {abs_model_path}. Please train the model first."
+            "emotion": predicted_label,
+            "confidence": round(confidence_score, 4),
+            "probabilities": emotion_probs
         }
-
-    # 2. Extract Features
-    # The feature extractor will pad/truncate to guarantee shape (40, max_pad_len)
-    features = extract_features(file_path, max_pad_len=max_pad_len)
-    
-    if features is None:
-        return {
-            "error": "Failed to extract features from the audio file."
-        }
-        
-    # 3. Prepare Tensor Dimensions
-    # PyTorch CNNs expect a 4D tensor input: (Batch_Size, Channels, Height, Width)
-    # Our features array is 2D: (40, max_pad_len).
-    # We use unsqueeze(0) twice: 
-    # First to add the Channel dimension -> (1, 40, max_pad_len)
-    # Second to add the Batch dimension -> (1, 1, 40, max_pad_len)
-    feature_tensor = torch.tensor(features, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
-
-    # 4. Hardware Setup (Fallback to CPU for inference if GPU is busy/unavailable)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    feature_tensor = feature_tensor.to(device)
-
-    # 5. Initialize Model and Load Weights
-    model = EmotionCNN(num_classes=4).to(device)
-    
-    # Load the state_dict. map_location ensures it loads on CPU safely if it was trained on GPU
-    model.load_state_dict(torch.load(abs_model_path, map_location=device, weights_only=True))
-    
-    # IMPORTANT: Set model to evaluation mode! 
-    # This disables Dropout and BatchNorm, ensuring deterministic predictions.
-    model.eval()
-
-    # 6. Perform Inference
-    # torch.no_grad() disables gradient calculation, saving memory and speeding up prediction
-    with torch.no_grad():
-        # Get raw, unnormalized scores (logits) from the network
-        outputs = model(feature_tensor)
-        
-        # Apply Softmax to convert raw scores into probabilities that sum to 1.0
-        # dim=1 means we apply softmax across the class dimension
-        probabilities = F.softmax(outputs, dim=1)
-        
-        # Get the highest probability (confidence) and its corresponding index
-        confidence, predicted_idx = torch.max(probabilities, 1)
-
-    # Extract the standard Python values from the PyTorch tensors using .item()
-    predicted_label = REVERSE_EMOTION_MAP.get(predicted_idx.item(), "Unknown")
-    confidence_score = confidence.item()
-
-    # Extract all probabilities and map them
-    # probabilities[0] because of the batch dimension
-    probs_list = probabilities[0].tolist()
-    emotion_probs = {}
-    for idx, prob in enumerate(probs_list):
-        emotion_name = REVERSE_EMOTION_MAP.get(idx, "Unknown")
-        emotion_probs[emotion_name] = round(prob, 4)
-
-    # 7. Return Result
-    return {
-        "emotion": predicted_label,
-        "confidence": round(confidence_score, 4),
-        "probabilities": emotion_probs
-    }
+    finally:
+        # Force garbage collection to recover RAM on Render's constrained instances
+        gc.collect()
 
 if __name__ == "__main__":
     # Example usage for testing the script directly:
@@ -110,3 +125,4 @@ if __name__ == "__main__":
         print(f"Prediction Result: {result}")
     else:
         print("Please provide a valid audio file path to test.")
+

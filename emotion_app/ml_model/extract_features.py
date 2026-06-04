@@ -28,8 +28,8 @@ def extract_features(file_path, max_pad_len=400, augment=False):
         np.ndarray: A 2D NumPy array of shape (n_mfcc, max_pad_len).
     """
     try:
-        # 1. Load the audio file
-        audio, sample_rate = librosa.load(file_path, res_type='kaiser_fast', sr=22050, mono=True)
+        # 1. Load the audio file (limit to max 10.0 seconds for memory safety on Render)
+        audio, sample_rate = librosa.load(file_path, res_type='kaiser_fast', sr=22050, mono=True, duration=10.0)
         
         # 2. Data Augmentation (Randomly applied during training)
         if augment:
@@ -55,6 +55,9 @@ def extract_features(file_path, max_pad_len=400, augment=False):
         # 3. Extract Features
         # Extract standard MFCCs
         mfccs = librosa.feature.mfcc(y=audio, sr=sample_rate, n_mfcc=40)
+        
+        # Explicit memory cleanup for the raw audio array before padding operations
+        del audio
         
         # 4. Pad or truncate to ensure a fixed size output along the time axis
         current_len = mfccs.shape[1]

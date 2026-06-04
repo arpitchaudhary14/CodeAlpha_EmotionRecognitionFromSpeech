@@ -131,10 +131,6 @@ def predict_emotion_api(request):
             # Run the prediction using our PyTorch backend
             result = predict_emotion(file_path)
             
-            # Clean up: Delete the temporary audio file after prediction to save disk space
-            if os.path.exists(file_path):
-                os.remove(file_path)
-                
             if "error" in result:
                 return JsonResponse({'success': False, 'message': result['error']}, status=500)
                 
@@ -153,10 +149,20 @@ def predict_emotion_api(request):
             })
             
         except Exception as e:
-            # Always clean up temporary files in case of an unexpected crash
+            import traceback
+            import logging
+            # Log the full error traceback for debugging on Render
+            logging.error(f"Prediction Crash: {traceback.format_exc()}")
+            # Return a safe JSON response rather than a Django HTML error page
+            return JsonResponse({'success': False, 'message': 'Internal Server Error during prediction.', 'details': str(e)}, status=500)
+        finally:
+            # Clean up: Guaranteed deletion of temporary audio file to save disk space
             if os.path.exists(file_path):
-                os.remove(file_path)
-            return JsonResponse({'success': False, 'message': str(e)}, status=500)
+                try:
+                    os.remove(file_path)
+                except Exception as cleanup_error:
+                    import logging
+                    logging.warning(f"Failed to delete temp file {file_path}: {cleanup_error}")
             
     return JsonResponse({'success': False, 'message': 'No audio file provided or invalid request method (must be POST).'}, status=400)
 
