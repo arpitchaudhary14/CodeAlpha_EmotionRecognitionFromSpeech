@@ -65,6 +65,8 @@ def predict_emotion(file_path, model_path='best_model.pth', max_pad_len=400):
               message if processing fails.
     """
     try:
+        print("STEP 1: Prediction Started")
+        
         # 1. Get Global Model (Loads only once per process)
         try:
             model, device = get_model(model_path)
@@ -74,6 +76,7 @@ def predict_emotion(file_path, model_path='best_model.pth', max_pad_len=400):
         # 2. Extract Features
         # The feature extractor will pad/truncate to guarantee shape (40, max_pad_len)
         features = extract_features(file_path, max_pad_len=max_pad_len)
+        print("STEP 2: Features Extracted")
         
         if features is None:
             return {
@@ -83,6 +86,7 @@ def predict_emotion(file_path, model_path='best_model.pth', max_pad_len=400):
         # 3. Prepare Tensor Dimensions
         feature_tensor = torch.tensor(features, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
         feature_tensor = feature_tensor.to(device)
+        print("STEP 3: Tensor Created")
 
         # 4. Perform Inference
         # torch.no_grad() disables gradient calculation, saving memory and speeding up prediction
@@ -90,6 +94,8 @@ def predict_emotion(file_path, model_path='best_model.pth', max_pad_len=400):
             outputs = model(feature_tensor)
             probabilities = F.softmax(outputs, dim=1)
             confidence, predicted_idx = torch.max(probabilities, 1)
+            
+        print("STEP 4: Inference Complete")
 
         # Extract the standard Python values from the PyTorch tensors using .item()
         predicted_label = REVERSE_EMOTION_MAP.get(predicted_idx.item(), "Unknown")
@@ -108,6 +114,7 @@ def predict_emotion(file_path, model_path='best_model.pth', max_pad_len=400):
         del probabilities
 
         # 6. Return Result
+        print("STEP 5: Returning JSON")
         return {
             "emotion": predicted_label,
             "confidence": round(confidence_score, 4),
