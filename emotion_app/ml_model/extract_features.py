@@ -37,7 +37,6 @@ def extract_features(file_path, max_pad_len=400, augment=False):
         logging.warning("EF1 Before librosa.load")
         audio, sample_rate = librosa.load(
             file_path,
-            res_type="kaiser_fast",
             sr=22050,
             mono=True,
             duration=10.0
