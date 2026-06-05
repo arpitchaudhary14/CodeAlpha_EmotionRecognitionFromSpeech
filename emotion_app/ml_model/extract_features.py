@@ -5,6 +5,7 @@ import librosa
 import numpy as np
 import logging
 import gc
+import traceback
 
 def add_noise(data, noise_factor=0.005):
     """Adds random Gaussian noise to the audio signal."""
@@ -41,7 +42,7 @@ def extract_features(file_path, max_pad_len=400, augment=False):
             mono=True,
             duration=10.0
         )
-        logging.warning("EF2 After librosa.load")
+        logging.warning("AAA After librosa.load")
         
         # 2. Data Augmentation (Randomly applied during training)
         if augment:
@@ -66,9 +67,9 @@ def extract_features(file_path, max_pad_len=400, augment=False):
         
         # 3. Extract Features
         # Extract standard MFCCs
-        logging.warning("EF3 Before MFCC")
+        logging.warning("BBB Before MFCC")
         mfccs = librosa.feature.mfcc(y=audio, sr=sample_rate, n_mfcc=40)
-        logging.warning("EF4 After MFCC")
+        logging.warning("CCC After MFCC")
         
         # Explicit memory cleanup for the raw audio array before padding operations
         del audio
@@ -88,6 +89,7 @@ def extract_features(file_path, max_pad_len=400, augment=False):
         return mfccs
 
     except Exception as e:
+        logging.error(traceback.format_exc())
         print(f"Error encountered while parsing file: {file_path}")
         print(f"Exception details: {e}")
         return None
