@@ -10,6 +10,8 @@ class UserProfile(models.Model):
     two_factor_enabled = models.BooleanField(default=False)
     otp_code = models.CharField(max_length=6, blank=True, null=True)
     otp_created_at = models.DateTimeField(blank=True, null=True)
+    otp_request_count = models.IntegerField(default=0)
+    otp_cooldown_until = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
         return self.user.username

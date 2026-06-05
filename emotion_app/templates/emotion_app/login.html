@@ -18,6 +18,11 @@
         
         <form method="post" class="auth-form">
             {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div class="error-msg" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 1rem; border-radius: 8px; color: #fca5a5; margin-bottom: 1.5rem; text-align: center;">
+                    {{ form.non_field_errors|striptags }}
+                </div>
+            {% endif %}
             {% for field in form %}
                 <div class="form-group">
                     <label for="{{ field.id_for_label }}">{{ field.label }}</label>

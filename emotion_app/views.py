@@ -9,7 +9,9 @@ from django.core.files.storage import default_storage
 from django.views.decorators.csrf import csrf_exempt
 import random
 from django.utils import timezone
+from datetime import timedelta
 from django.core.mail import send_mail
+from django.template.loader import render_to_string
 from django.conf import settings
 from django.db.models import Count, Avg
 from django.contrib.auth.models import User
@@ -85,9 +87,8 @@ def register_view(request):
         form = UserRegisterForm(request.POST)
         if form.is_valid():
             user = form.save()
-            # The email is automatically saved because of Meta.fields
-            login(request, user)
-            return redirect('dashboard')
+            # Redirect newly registered users to login, preventing auto-login.
+            return redirect('login')
     else:
         form = UserRegisterForm()
     return render(request, 'emotion_app/register.html', {'form': form})
@@ -245,10 +246,28 @@ def verify_email_view(request):
         action = request.POST.get('action')
         profile = request.user.userprofile
         if action == 'send_otp':
+            # Check cooldown
+            if profile.otp_cooldown_until and timezone.now() < profile.otp_cooldown_until:
+                minutes_left = int((profile.otp_cooldown_until - timezone.now()).total_seconds() / 60)
+                return render(request, 'emotion_app/verify_email.html', {'step': 'request', 'error': f'Please wait {minutes_left} minutes before requesting another OTP.'})
+
+            # Check limits
+            if profile.otp_request_count >= 3:
+                profile.otp_cooldown_until = timezone.now() + timedelta(minutes=30)
+                profile.otp_request_count = 0
+                profile.save()
+                return render(request, 'emotion_app/verify_email.html', {'step': 'request', 'error': 'Too many requests. Please try again after 30 minutes.'})
+
             otp = str(random.randint(100000, 999999))
             profile.otp_code = otp
             profile.otp_created_at = timezone.now()
+            profile.otp_request_count += 1
             profile.save()
+            
+            html_message = render_to_string('emotion_app/email_template.html', {
+                'otp': otp,
+                'user': request.user,
+            })
             
             send_mail(
                 'Verify your Email',
@@ -256,19 +275,22 @@ def verify_email_view(request):
                 'noreply@emotionsense.com',
                 [request.user.email],
                 fail_silently=False,
+                html_message=html_message
             )
             return render(request, 'emotion_app/verify_email.html', {'step': 'verify'})
         elif action == 'verify_otp':
             otp_entered = request.POST.get('otp')
             if profile.otp_code == otp_entered:
-                # Check expiration (e.g., 5 mins)
+                # Check expiration (2 mins)
                 time_diff = timezone.now() - profile.otp_created_at
-                if time_diff.total_seconds() <= 300:
+                if time_diff.total_seconds() <= 120:
                     profile.email_verified = True
+                    profile.otp_request_count = 0
+                    profile.otp_cooldown_until = None
                     profile.save()
                     return redirect('profile')
                 else:
-                    return render(request, 'emotion_app/verify_email.html', {'step': 'verify', 'error': 'OTP expired'})
+                    return render(request, 'emotion_app/verify_email.html', {'step': 'verify', 'error': 'OTP expired (Valid for 2 minutes only)'})
             else:
                 return render(request, 'emotion_app/verify_email.html', {'step': 'verify', 'error': 'Invalid OTP'})
                 
@@ -281,9 +303,29 @@ def password_reset_view(request):
             user = User.objects.get(email=email)
             otp = str(random.randint(100000, 999999))
             profile = user.userprofile
+            
+            # Check cooldown
+            if profile.otp_cooldown_until and timezone.now() < profile.otp_cooldown_until:
+                minutes_left = int((profile.otp_cooldown_until - timezone.now()).total_seconds() / 60)
+                return render(request, 'emotion_app/password_reset.html', {'error': f'Please wait {minutes_left} minutes before requesting another OTP.'})
+
+            # Check limits
+            if profile.otp_request_count >= 3:
+                profile.otp_cooldown_until = timezone.now() + timedelta(minutes=30)
+                profile.otp_request_count = 0
+                profile.save()
+                return render(request, 'emotion_app/password_reset.html', {'error': 'Too many requests. Please try again after 30 minutes.'})
+
+            otp = str(random.randint(100000, 999999))
             profile.otp_code = otp
             profile.otp_created_at = timezone.now()
+            profile.otp_request_count += 1
             profile.save()
+            
+            html_message = render_to_string('emotion_app/email_template.html', {
+                'otp': otp,
+                'user': user,
+            })
             
             send_mail(
                 'Password Reset OTP',
@@ -291,6 +333,7 @@ def password_reset_view(request):
                 'noreply@emotionsense.com',
                 [email],
                 fail_silently=False,
+                html_message=html_message
             )
             # Store email in session to verify OTP later
             request.session['reset_email'] = email
@@ -312,13 +355,16 @@ def verify_otp_view(request):
             profile = user.userprofile
             if profile.otp_code == otp_entered:
                 time_diff = timezone.now() - profile.otp_created_at
-                if time_diff.total_seconds() <= 300:
+                if time_diff.total_seconds() <= 120:
                     user.set_password(new_password)
                     user.save()
+                    profile.otp_request_count = 0
+                    profile.otp_cooldown_until = None
+                    profile.save()
                     del request.session['reset_email']
                     return redirect('login')
                 else:
-                    return render(request, 'emotion_app/verify_otp.html', {'error': 'OTP expired'})
+                    return render(request, 'emotion_app/verify_otp.html', {'error': 'OTP expired (Valid for 2 minutes only)'})
             else:
                 return render(request, 'emotion_app/verify_otp.html', {'error': 'Invalid OTP'})
         except User.DoesNotExist:
