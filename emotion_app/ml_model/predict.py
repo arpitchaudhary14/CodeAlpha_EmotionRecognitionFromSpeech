@@ -1,6 +1,7 @@
 import os
 import gc
 import logging
+import traceback
 import torch
 import torch.nn.functional as F
 
@@ -88,42 +89,58 @@ def predict_emotion(file_path, model_path='best_model.pth', max_pad_len=400):
             }
             
         # 3. Prepare Tensor Dimensions
-        feature_tensor = torch.tensor(features, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
-        feature_tensor = feature_tensor.to(device)
-        logging.warning("STEP 3: Tensor Created")
+        try:
+            logging.warning("STEP 3 Before Tensor Creation")
+            feature_tensor = torch.tensor(features, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
+            feature_tensor = feature_tensor.to(device)
+            logging.warning("STEP 3A Tensor Created")
+        except Exception as e:
+            logging.error(traceback.format_exc())
+            return {"error": str(e)}
 
         # 4. Perform Inference
         # torch.no_grad() disables gradient calculation, saving memory and speeding up prediction
-        with torch.no_grad():
-            outputs = model(feature_tensor)
-            probabilities = F.softmax(outputs, dim=1)
-            confidence, predicted_idx = torch.max(probabilities, 1)
-            
-        logging.warning("STEP 4: Inference Complete")
+        try:
+            with torch.no_grad():
+                logging.warning("STEP 4 Before Model Inference")
+                outputs = model(feature_tensor)
+                logging.warning("STEP 4A Model Inference Complete")
+                
+                logging.warning("STEP 4B Before Softmax")
+                probabilities = F.softmax(outputs, dim=1)
+                confidence, predicted_idx = torch.max(probabilities, 1)
+                logging.warning("STEP 4C After Softmax")
+        except Exception as e:
+            logging.error(traceback.format_exc())
+            return {"error": str(e)}
 
-        # Extract the standard Python values from the PyTorch tensors using .item()
-        predicted_label = REVERSE_EMOTION_MAP.get(predicted_idx.item(), "Unknown")
-        confidence_score = confidence.item()
+        try:
+            # Extract the standard Python values from the PyTorch tensors using .item()
+            predicted_label = REVERSE_EMOTION_MAP.get(predicted_idx.item(), "Unknown")
+            confidence_score = confidence.item()
 
-        # Extract all probabilities and map them
-        probs_list = probabilities[0].tolist()
-        emotion_probs = {}
-        for idx, prob in enumerate(probs_list):
-            emotion_name = REVERSE_EMOTION_MAP.get(idx, "Unknown")
-            emotion_probs[emotion_name] = round(prob, 4)
+            # Extract all probabilities and map them
+            probs_list = probabilities[0].tolist()
+            emotion_probs = {}
+            for idx, prob in enumerate(probs_list):
+                emotion_name = REVERSE_EMOTION_MAP.get(idx, "Unknown")
+                emotion_probs[emotion_name] = round(prob, 4)
 
-        # 5. Clean up local tensors to eagerly free memory before garbage collection
-        del feature_tensor
-        del outputs
-        del probabilities
+            # 5. Clean up local tensors to eagerly free memory before garbage collection
+            del feature_tensor
+            del outputs
+            del probabilities
 
-        # 6. Return Result
-        logging.warning("STEP 5: Returning JSON")
-        return {
-            "emotion": predicted_label,
-            "confidence": round(confidence_score, 4),
-            "probabilities": emotion_probs
-        }
+            # 6. Return Result
+            logging.warning("STEP 5 Returning JSON")
+            return {
+                "emotion": predicted_label,
+                "confidence": round(confidence_score, 4),
+                "probabilities": emotion_probs
+            }
+        except Exception as e:
+            logging.error(traceback.format_exc())
+            return {"error": str(e)}
     finally:
         # Force garbage collection to recover RAM on Render's constrained instances
         gc.collect()
