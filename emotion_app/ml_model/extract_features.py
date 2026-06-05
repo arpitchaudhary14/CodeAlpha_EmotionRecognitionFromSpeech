@@ -1,5 +1,10 @@
+import os
+os.environ["NUMBA_DISABLE_JIT"] = "1"
+
 import librosa
 import numpy as np
+import logging
+import gc
 
 def add_noise(data, noise_factor=0.005):
     """Adds random Gaussian noise to the audio signal."""
@@ -29,7 +34,15 @@ def extract_features(file_path, max_pad_len=400, augment=False):
     """
     try:
         # 1. Load the audio file (limit to max 10.0 seconds for memory safety on Render)
-        audio, sample_rate = librosa.load(file_path, res_type='kaiser_fast', sr=22050, mono=True, duration=10.0)
+        logging.warning("EF1 Before librosa.load")
+        audio, sample_rate = librosa.load(
+            file_path,
+            res_type="kaiser_fast",
+            sr=22050,
+            mono=True,
+            duration=10.0
+        )
+        logging.warning("EF2 After librosa.load")
         
         # 2. Data Augmentation (Randomly applied during training)
         if augment:
@@ -54,12 +67,16 @@ def extract_features(file_path, max_pad_len=400, augment=False):
         
         # 3. Extract Features
         # Extract standard MFCCs
+        logging.warning("EF3 Before MFCC")
         mfccs = librosa.feature.mfcc(y=audio, sr=sample_rate, n_mfcc=40)
+        logging.warning("EF4 After MFCC")
         
         # Explicit memory cleanup for the raw audio array before padding operations
         del audio
+        gc.collect()
         
         # 4. Pad or truncate to ensure a fixed size output along the time axis
+        logging.warning("EF5 Before Padding")
         current_len = mfccs.shape[1]
         
         if current_len > max_pad_len:
@@ -68,6 +85,7 @@ def extract_features(file_path, max_pad_len=400, augment=False):
             pad_width = max_pad_len - current_len
             mfccs = np.pad(mfccs, pad_width=((0, 0), (0, pad_width)), mode='constant')
             
+        logging.warning("EF6 Returning Features")
         return mfccs
 
     except Exception as e:
