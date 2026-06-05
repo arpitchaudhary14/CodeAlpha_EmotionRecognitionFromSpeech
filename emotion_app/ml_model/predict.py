@@ -70,14 +70,17 @@ def predict_emotion(file_path, model_path='best_model.pth', max_pad_len=400):
         
         # 1. Get Global Model (Loads only once per process)
         try:
+            logging.warning("STEP 1A Before get_model")
             model, device = get_model(model_path)
+            logging.warning("STEP 1B After get_model")
         except Exception as e:
             return {"error": str(e)}
 
         # 2. Extract Features
         # The feature extractor will pad/truncate to guarantee shape (40, max_pad_len)
+        logging.warning("STEP 1C Before extract_features")
         features = extract_features(file_path, max_pad_len=max_pad_len)
-        logging.warning("STEP 2: Features Extracted")
+        logging.warning("STEP 2 Features Extracted")
         
         if features is None:
             return {
