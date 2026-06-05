@@ -1,81 +1,62 @@
 import os
-# os.environ["NUMBA_DISABLE_JIT"] = "1"
+# Force Numba to stay fully disabled to prevent LLVM OOM crashes on Render.
+os.environ["NUMBA_DISABLE_JIT"] = "1"
 
 import librosa
 import numpy as np
 import logging
 import gc
 import traceback
+import scipy.fftpack
 
-def add_noise(data, noise_factor=0.005):
-    """Adds random Gaussian noise to the audio signal."""
-    noise = np.random.randn(len(data))
-    augmented_data = data + noise_factor * noise
-    return augmented_data
-
-def shift_pitch(data, sample_rate, n_steps=2):
-    """Shifts the pitch of the audio signal."""
-    return librosa.effects.pitch_shift(y=data, sr=sample_rate, n_steps=n_steps)
-
-def stretch_time(data, rate=1.2):
-    """Stretches or compresses the time of the audio signal."""
-    return librosa.effects.time_stretch(y=data, rate=rate)
+def compute_mfcc_manual(y, sr, n_mfcc=40, n_fft=2048, hop_length=512, n_mels=128):
+    """
+    Manually computes MFCC to bypass librosa.feature.mfcc entirely.
+    This guarantees zero calls to Numba-decorated utility functions,
+    avoiding 'get_call_template' crashes when JIT is disabled.
+    """
+    # 1. Compute STFT (uses pure numpy)
+    D = np.abs(librosa.stft(y, n_fft=n_fft, hop_length=hop_length))**2
+    
+    # 2. Apply Mel filterbank (uses pure numpy)
+    mel_basis = librosa.filters.mel(sr=sr, n_fft=n_fft, n_mels=n_mels)
+    S = np.dot(mel_basis, D)
+    
+    # 3. Convert to DB scale (uses pure numpy)
+    S_db = librosa.power_to_db(S)
+    
+    # 4. Discrete Cosine Transform for MFCCs (uses pure scipy)
+    mfccs = scipy.fftpack.dct(S_db, axis=0, type=2, norm='ortho')[:n_mfcc]
+    return mfccs
 
 def extract_features(file_path, max_pad_len=400, augment=False):
     """
-    Extracts MFCC features from an audio file, with optional data augmentation.
-    
-    Args:
-        file_path (str): Path to the .wav audio file.
-        max_pad_len (int, optional): Fixed length to pad or truncate MFCCs to. Defaults to 400.
-        augment (bool, optional): Whether to apply random audio augmentations. Defaults to False.
-
-    Returns:
-        np.ndarray: A 2D NumPy array of shape (n_mfcc, max_pad_len).
+    Extracts MFCC features safely without Numba or Resampy.
     """
     try:
-        # 1. Load the audio file (limit to max 10.0 seconds for memory safety on Render)
         logging.warning("EF1 Before librosa.load")
+        
+        # res_type="scipy" forces librosa to avoid resampy (which uses Numba)
         audio, sample_rate = librosa.load(
             file_path,
             sr=22050,
             mono=True,
-            duration=10.0
+            duration=10.0,
+            res_type="scipy"
         )
         logging.warning("AAA After librosa.load")
         
-        # 2. Data Augmentation (Randomly applied during training)
+        # Augmentation is stripped because pitch_shift and time_stretch natively require Numba/Resampy
         if augment:
-            # Randomly decide which augmentations to apply (each has a 50% chance)
-            if np.random.rand() < 0.5:
-                # Add slight background noise (kept small between 0.001 to 0.005)
-                # Avoids corrupting emotion semantics with extreme noise
-                noise_factor = np.random.uniform(0.001, 0.005)
-                audio = add_noise(audio, noise_factor)
-                
-            if np.random.rand() < 0.5:
-                # Slight pitch shifting between -2 and +2 semitones
-                # Extreme pitch shifts alter emotion characteristics, so keep it tight
-                n_steps = np.random.uniform(-2, 2)
-                audio = shift_pitch(audio, sample_rate, n_steps)
-                
-            if np.random.rand() < 0.5:
-                # Slight time stretching (0.8x to 1.2x speed)
-                # Avoids aggressive speed changes that sound robotic
-                rate = np.random.uniform(0.8, 1.2)
-                audio = stretch_time(audio, rate)
-        
-        # 3. Extract Features
-        # Extract standard MFCCs
+            logging.warning("Data augmentation skipped: natively requires Numba.")
+
         logging.warning("BBB Before MFCC")
-        mfccs = librosa.feature.mfcc(y=audio, sr=sample_rate, n_mfcc=40)
+        mfccs = compute_mfcc_manual(audio, sample_rate, n_mfcc=40)
         logging.warning("CCC After MFCC")
         
-        # Explicit memory cleanup for the raw audio array before padding operations
         del audio
         gc.collect()
         
-        # 4. Pad or truncate to ensure a fixed size output along the time axis
         logging.warning("EF5 Before Padding")
         current_len = mfccs.shape[1]
         
