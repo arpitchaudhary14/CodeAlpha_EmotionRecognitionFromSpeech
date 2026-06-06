@@ -67,21 +67,15 @@ def predict_emotion(file_path, model_path='best_model.pth', max_pad_len=400):
               message if processing fails.
     """
     try:
-        logging.warning("STEP 1: Prediction Started")
-        
         # 1. Get Global Model (Loads only once per process)
         try:
-            logging.warning("STEP 1A Before get_model")
             model, device = get_model(model_path)
-            logging.warning("STEP 1B After get_model")
         except Exception as e:
             return {"error": str(e)}
 
         # 2. Extract Features
         # The feature extractor will pad/truncate to guarantee shape (40, max_pad_len)
-        logging.warning("STEP 1C Before extract_features")
         features = extract_features(file_path, max_pad_len=max_pad_len)
-        logging.warning("STEP 2 Features Extracted")
         
         if features is None:
             return {
@@ -90,10 +84,8 @@ def predict_emotion(file_path, model_path='best_model.pth', max_pad_len=400):
             
         # 3. Prepare Tensor Dimensions
         try:
-            logging.warning("STEP 3 Before Tensor Creation")
             feature_tensor = torch.tensor(features, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
             feature_tensor = feature_tensor.to(device)
-            logging.warning("STEP 3A Tensor Created")
         except Exception as e:
             logging.error(traceback.format_exc())
             return {"error": str(e)}
@@ -102,14 +94,9 @@ def predict_emotion(file_path, model_path='best_model.pth', max_pad_len=400):
         # torch.no_grad() disables gradient calculation, saving memory and speeding up prediction
         try:
             with torch.no_grad():
-                logging.warning("STEP 4 Before Model Inference")
                 outputs = model(feature_tensor)
-                logging.warning("STEP 4A Model Inference Complete")
-                
-                logging.warning("STEP 4B Before Softmax")
                 probabilities = F.softmax(outputs, dim=1)
                 confidence, predicted_idx = torch.max(probabilities, 1)
-                logging.warning("STEP 4C After Softmax")
         except Exception as e:
             logging.error(traceback.format_exc())
             return {"error": str(e)}
@@ -132,7 +119,6 @@ def predict_emotion(file_path, model_path='best_model.pth', max_pad_len=400):
             del probabilities
 
             # 6. Return Result
-            logging.warning("STEP 5 Returning JSON")
             return {
                 "emotion": predicted_label,
                 "confidence": round(confidence_score, 4),

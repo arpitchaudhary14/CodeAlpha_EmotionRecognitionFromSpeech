@@ -12,7 +12,7 @@ The platform is designed to be fully self-contained, handling secure user authen
   - Automated AFK (Away From Keyboard) session timeouts.
 ## Tech Stack
 - **Backend Framework**: Django 6.x
-- **Machine Learning**: PyTorch, Librosa, Scikit-learn
+- **Machine Learning**: PyTorch, python_speech_features, Scikit-learn
 - **Frontend UI**: HTML5, Vanilla CSS (Glassmorphism UI), JavaScript, Chart.js
 - **Database**: SQLite (Development) / PostgreSQL (Ready)
 - **Environment Management**: python-dotenv

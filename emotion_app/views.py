@@ -269,14 +269,19 @@ def verify_email_view(request):
                 'user': request.user,
             })
             
-            send_mail(
-                'Verify your Email',
-                f'Your OTP is: {otp}',
-                'noreply@emotionsense.com',
-                [request.user.email],
-                fail_silently=False,
-                html_message=html_message
-            )
+            try:
+                send_mail(
+                    'Verify your Email',
+                    f'Your OTP is: {otp}',
+                    'noreply@emotionsense.com',
+                    [request.user.email],
+                    fail_silently=False,
+                    html_message=html_message
+                )
+            except Exception as e:
+                import logging
+                logging.error(f"Email sending failed: {e}")
+                return render(request, 'emotion_app/verify_email.html', {'step': 'request', 'error': 'Failed to send OTP email. Please ensure your email configuration is correct or try again later.'})
             return render(request, 'emotion_app/verify_email.html', {'step': 'verify'})
         elif action == 'verify_otp':
             otp_entered = request.POST.get('otp')
@@ -327,14 +332,19 @@ def password_reset_view(request):
                 'user': user,
             })
             
-            send_mail(
-                'Password Reset OTP',
-                f'Your OTP for password reset is: {otp}',
-                'noreply@emotionsense.com',
-                [email],
-                fail_silently=False,
-                html_message=html_message
-            )
+            try:
+                send_mail(
+                    'Password Reset OTP',
+                    f'Your OTP for password reset is: {otp}',
+                    'noreply@emotionsense.com',
+                    [email],
+                    fail_silently=False,
+                    html_message=html_message
+                )
+            except Exception as e:
+                import logging
+                logging.error(f"Email sending failed: {e}")
+                return render(request, 'emotion_app/password_reset.html', {'error': 'Failed to send OTP email. Please ensure your email configuration is correct or try again later.'})
             # Store email in session to verify OTP later
             request.session['reset_email'] = email
             return redirect('verify_otp')
