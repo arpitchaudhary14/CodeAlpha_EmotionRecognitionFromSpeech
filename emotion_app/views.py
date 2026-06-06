@@ -281,7 +281,8 @@ def verify_email_view(request):
             except Exception as e:
                 import logging
                 logging.error(f"Email sending failed: {e}")
-                return render(request, 'emotion_app/verify_email.html', {'step': 'request', 'error': 'Failed to send OTP email. Please ensure your email configuration is correct or try again later.'})
+                logging.warning(f"RENDER FREE TIER BYPASS: The OTP for {request.user.username} is {otp}")
+                return render(request, 'emotion_app/verify_email.html', {'step': 'verify', 'error': 'Failed to send email (Render blocks SMTP). Check the server logs for your OTP!'})
             return render(request, 'emotion_app/verify_email.html', {'step': 'verify'})
         elif action == 'verify_otp':
             otp_entered = request.POST.get('otp')
@@ -344,7 +345,9 @@ def password_reset_view(request):
             except Exception as e:
                 import logging
                 logging.error(f"Email sending failed: {e}")
-                return render(request, 'emotion_app/password_reset.html', {'error': 'Failed to send OTP email. Please ensure your email configuration is correct or try again later.'})
+                logging.warning(f"RENDER FREE TIER BYPASS: The password reset OTP for {email} is {otp}")
+                request.session['reset_email'] = email
+                return render(request, 'emotion_app/verify_otp.html', {'error': 'Failed to send email (Render blocks SMTP). Check the server logs for your OTP!'})
             # Store email in session to verify OTP later
             request.session['reset_email'] = email
             return redirect('verify_otp')
