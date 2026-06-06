@@ -1,4 +1,7 @@
 # ResoNate AI - Speech Emotion Recognition
+
+**[Live Demo Available Here](https://resonate-ai-vva8.onrender.com/)**
+
 ResoNate AI is a production-ready Django application that utilizes a custom PyTorch Convolutional Neural Network (CNN) to detect emotional states (Happy, Sad, Angry, Neutral) directly from human speech audio patterns. 
 The platform is designed to be fully self-contained, handling secure user authentication, real-time ML inference, and deep data analytics via an interactive Dashboard.
 ## Features
@@ -38,7 +41,10 @@ DEBUG=True
 SECRET_KEY=your_secure_django_secret_key
 EMAIL_HOST_USER=your_email@gmail.com
 EMAIL_HOST_PASSWORD=your_16_digit_app_password
+GMAIL_WEBHOOK_URL=your_google_apps_script_webhook_url
 ```
+> **Deployment Note:** Platforms like Render block free tiers from using standard SMTP ports. For successful email delivery in production, setup a Google Apps Script Webhook and place the URL in `GMAIL_WEBHOOK_URL` to securely route emails via HTTPS.
+
 ### 5. Run Migrations & Start Server
 ```bash
 python manage.py makemigrations
