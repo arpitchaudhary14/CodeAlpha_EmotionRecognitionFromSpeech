@@ -1,4 +1,6 @@
 import os
+import json
+import urllib.request
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.contrib.auth import login, authenticate, logout
@@ -20,6 +22,31 @@ from .forms import UserRegisterForm
 
 # Import our ML prediction function
 from .ml_model.predict import predict_emotion
+
+def send_custom_email(subject, html_message, recipient_list):
+    """
+    Sends email via a Google Apps Script Webhook (to bypass Render SMTP blocks),
+    or falls back to standard Django SMTP if the webhook URL is not provided.
+    """
+    webhook_url = os.getenv('GMAIL_WEBHOOK_URL')
+    
+    if webhook_url:
+        data = {
+            "to": recipient_list[0],
+            "subject": subject,
+            "htmlBody": html_message
+        }
+        req = urllib.request.Request(webhook_url, data=json.dumps(data).encode('utf-8'), headers={'Content-Type': 'application/json'})
+        urllib.request.urlopen(req, timeout=10)
+    else:
+        send_mail(
+            subject,
+            "Please view this email in an HTML compatible client.",
+            settings.DEFAULT_FROM_EMAIL,
+            recipient_list,
+            fail_silently=False,
+            html_message=html_message
+        )
 
 def landing(request):
     """Render the hero landing page."""
@@ -270,13 +297,10 @@ def verify_email_view(request):
             })
             
             try:
-                send_mail(
+                send_custom_email(
                     'Verify your Email',
-                    f'Your OTP is: {otp}',
-                    'noreply@emotionsense.com',
-                    [request.user.email],
-                    fail_silently=False,
-                    html_message=html_message
+                    html_message,
+                    [request.user.email]
                 )
             except Exception as e:
                 import logging
@@ -334,13 +358,10 @@ def password_reset_view(request):
             })
             
             try:
-                send_mail(
+                send_custom_email(
                     'Password Reset OTP',
-                    f'Your OTP for password reset is: {otp}',
-                    'noreply@emotionsense.com',
-                    [email],
-                    fail_silently=False,
-                    html_message=html_message
+                    html_message,
+                    [email]
                 )
             except Exception as e:
                 import logging
